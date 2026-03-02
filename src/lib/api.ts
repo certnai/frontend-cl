@@ -119,6 +119,29 @@ export async function scoreGamePredictions(
   return json.data as BatchScoreResult;
 }
 
+export interface PredictionRecord {
+  token_id: number;
+  predictor_address: string;
+  prediction_text: string;
+  game_id_str: string;
+  sport: string;
+  is_scored: boolean;
+  is_redeemed: boolean;
+  score?: {
+    accuracy_score: number;
+    confidence: string;
+    reasoning: string;
+    model_used: string;
+  };
+}
+
+export async function getGamePredictions(gameId: string): Promise<PredictionRecord[]> {
+  const res = await fetch(`${MIDDLEWARE_URL}/api/v1/predictions/game/${gameId}`);
+  if (!res.ok) return [];
+  const json = await res.json();
+  return (json.data ?? []) as PredictionRecord[];
+}
+
 export async function getHealth(): Promise<{ status: string }> {
   const res = await fetch(`${MIDDLEWARE_URL}/health`);
   return res.json();

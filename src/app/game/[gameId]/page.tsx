@@ -16,8 +16,8 @@ import {
   SPORTS_PREDICTION_RESOLVER_ADDRESS,
 } from "@/lib/contracts";
 import { predictionNFTAbi, sportsPredictionResolverAbi } from "@/lib/abis";
-import { getGameResolution, getFinishedGame, getLiveGame, scoreGamePredictions, registerPrediction } from "@/lib/api";
-import type { GameData, ResolutionData, LiveGameData, BatchScoreResult } from "@/lib/api";
+import { getGameResolution, getFinishedGame, getLiveGame, scoreGamePredictions, registerPrediction, getGamePredictions } from "@/lib/api";
+import type { GameData, ResolutionData, LiveGameData, BatchScoreResult, PredictionRecord } from "@/lib/api";
 
 /* ───────── helper: ESPN game id → bytes32 ───────── */
 // Must match SportsPredictionResolver: keccak256(abi.encodePacked(gameId))
@@ -393,16 +393,24 @@ function PredictionRow({ tokenId }: { tokenId: bigint }) {
 /* ───────── score predictions button ───────── */
 function ScorePredictions({ gameId, sport, isFinal }: { gameId: string; sport: string; isFinal: boolean }) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<BatchScoreResult | null>(null);
+  const [allPredictions, setAllPredictions] = useState<PredictionRecord[]>([]);
+  const [newlyProcessed, setNewlyProcessed] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load existing predictions on mount
+  useEffect(() => {
+    if (isFinal) getGamePredictions(gameId).then(setAllPredictions);
+  }, [gameId, isFinal]);
 
   async function handleScore() {
     setLoading(true);
     setError(null);
-    setResult(null);
     try {
       const data = await scoreGamePredictions(gameId, sport);
-      setResult(data);
+      setNewlyProcessed(data.total_processed);
+      // Refresh predictions list to pick up newly scored ones
+      const updated = await getGamePredictions(gameId);
+      setAllPredictions(updated);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scoring failed");
     } finally {
@@ -412,35 +420,59 @@ function ScorePredictions({ gameId, sport, isFinal }: { gameId: string; sport: s
 
   if (!isFinal) return null;
 
+  const scored = allPredictions.filter((p) => p.is_scored);
+  const unscored = allPredictions.filter((p) => !p.is_scored);
+
   return (
     <div className="card p-6 space-y-3">
       <h2 className="text-lg font-semibold">Score Predictions (AI)</h2>
       <p className="text-xs text-[var(--muted)]">
-        Run AI scoring on all predictions for this finished game. Do this before requesting resolution.
+        {allPredictions.length === 0
+          ? "No predictions registered for this game yet."
+          : `${scored.length} scored · ${unscored.length} unscored`}
       </p>
-      <button
-        onClick={handleScore}
-        disabled={loading}
-        className="btn-primary w-full disabled:opacity-40"
-      >
-        {loading ? "Scoring..." : "Score Predictions with AI"}
-      </button>
-      {result && (
-        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm space-y-1">
-          <p className="text-blue-400 font-medium">Scoring Complete</p>
-          <p className="text-[var(--muted)] text-xs">Processed: {result.total_processed} &nbsp;·&nbsp; Errors: {result.total_errors}</p>
-          {result.scores.map((s) => (
-            <div key={s.token_id} className="text-xs text-white">
-              Token #{s.token_id}: {s.error ? (
-                <span className="text-red-400">{s.error}</span>
-              ) : (
-                <span className="text-green-400">{s.accuracy_score}/100 ({s.confidence})</span>
-              )}
+
+      {/* Existing scores */}
+      {scored.length > 0 && (
+        <div className="space-y-2">
+          {scored.map((p) => (
+            <div key={p.token_id} className="flex items-center gap-3 text-xs">
+              <span className="font-mono text-indigo-400">#{p.token_id}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${p.score?.accuracy_score ?? 0}%`,
+                    backgroundColor: (p.score?.accuracy_score ?? 0) >= 70 ? "#22c55e" : (p.score?.accuracy_score ?? 0) >= 40 ? "#eab308" : "#ef4444",
+                  }}
+                />
+              </div>
+              <span style={{ color: (p.score?.accuracy_score ?? 0) >= 70 ? "#22c55e" : (p.score?.accuracy_score ?? 0) >= 40 ? "#eab308" : "#ef4444" }}>
+                {p.score?.accuracy_score ?? 0}/100
+              </span>
+              <span className="text-[var(--muted)]">{p.score?.model_used}</span>
             </div>
           ))}
-          <p className="text-indigo-400 text-xs pt-1">→ Now click "Request Resolution" below.</p>
         </div>
       )}
+
+      {unscored.length > 0 && (
+        <button
+          onClick={handleScore}
+          disabled={loading}
+          className="btn-primary w-full disabled:opacity-40"
+        >
+          {loading ? "Scoring..." : `Score ${unscored.length} Prediction${unscored.length > 1 ? "s" : ""} with AI`}
+        </button>
+      )}
+
+      {newlyProcessed !== null && (
+        <p className="text-blue-400 text-xs">
+          {newlyProcessed > 0 ? `✓ Scored ${newlyProcessed} new prediction${newlyProcessed > 1 ? "s" : ""}.` : "All predictions already scored."}
+          {" "}<span className="text-indigo-400">→ Now click "Request Resolution" below.</span>
+        </p>
+      )}
+
       {error && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm">
           <p className="text-red-400 text-xs break-all">{error}</p>
