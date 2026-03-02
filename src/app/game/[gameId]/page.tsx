@@ -8,7 +8,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { parseEther } from "viem";
+import { parseEther, parseEventLogs } from "viem";
 import { ConnectButton } from "@/components/ConnectButton";
 import Link from "next/link";
 import {
@@ -16,7 +16,7 @@ import {
   SPORTS_PREDICTION_RESOLVER_ADDRESS,
 } from "@/lib/contracts";
 import { predictionNFTAbi, sportsPredictionResolverAbi } from "@/lib/abis";
-import { getGameResolution, getFinishedGame, getLiveGame, scoreGamePredictions } from "@/lib/api";
+import { getGameResolution, getFinishedGame, getLiveGame, scoreGamePredictions, registerPrediction } from "@/lib/api";
 import type { GameData, ResolutionData, LiveGameData, BatchScoreResult } from "@/lib/api";
 
 /* ───────── helper: ESPN game id → bytes32 ───────── */
@@ -162,9 +162,36 @@ function PredictionForm({ gameId }: { gameId: string }) {
 
   const { data: hash, writeContract, isPending } = useWriteContract();
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // Register prediction in middleware DB after successful mint
+  useEffect(() => {
+    if (!isSuccess || !receipt || !address) return;
+    try {
+      const logs = parseEventLogs({
+        abi: predictionNFTAbi,
+        eventName: "PredictionMinted",
+        logs: receipt.logs,
+      });
+      if (logs.length === 0) return;
+      const { tokenId, predictionText, sport: mintSport, gameId: gameIdBytes32, stakeAmount } = logs[0].args;
+      registerPrediction({
+        token_id: Number(tokenId),
+        predictor_address: address,
+        prediction_text: predictionText,
+        game_id: gameIdBytes32,
+        game_id_str: gameId,
+        sport: mintSport,
+        game_info: `ESPN Game ${gameId}`,
+        stake_amount: Number(stakeAmount),
+        blockchain_tx_hash: receipt.transactionHash,
+      });
+    } catch (e) {
+      console.error("Failed to register prediction:", e);
+    }
+  }, [isSuccess, receipt, address, gameId]);
 
   function handleMint() {
     if (!address || !prediction) return;
@@ -463,16 +490,28 @@ function ResolveTrigger({ gameId }: { gameId: string }) {
             : "Request Resolution (CRE Trigger)"}
       </button>
       {isSuccess && hash && (
-        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-sm">
+        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-sm space-y-2">
           <p className="text-green-400 font-medium">Resolution Requested!</p>
           <a
             href={`https://sepolia.etherscan.io/tx/${hash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-indigo-400 hover:underline break-all"
+            className="text-xs text-indigo-400 hover:underline break-all block"
           >
             View on Etherscan →
           </a>
+          <div className="mt-2 p-2 rounded bg-black/40 border border-white/10">
+            <p className="text-xs text-[var(--muted)] mb-1">Run CRE simulation (paste in terminal):</p>
+            <code className="text-xs text-yellow-300 break-all block">
+              {`cre workflow simulate ./sports-prediction --target local-simulation -R . --non-interactive --trigger-index 0 --evm-tx-hash ${hash} --evm-event-index 0 --broadcast`}
+            </code>
+            <button
+              onClick={() => navigator.clipboard.writeText(`cd /mnt/d/certnai/core-cl/cre-workflow && cre workflow simulate ./sports-prediction --target local-simulation -R . --non-interactive --trigger-index 0 --evm-tx-hash ${hash} --evm-event-index 0 --broadcast`)}
+              className="mt-2 text-xs px-3 py-1 rounded bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 transition"
+            >
+              Copy full command
+            </button>
+          </div>
         </div>
       )}
       {error && (

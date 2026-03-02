@@ -72,6 +72,28 @@ export async function getLiveGame(
   return fetchApi(`/api/v1/games/live?sport=${sport}&game_id=${gameId}`);
 }
 
+export async function registerPrediction(payload: {
+  token_id: number;
+  predictor_address: string;
+  prediction_text: string;
+  game_id: string;       // bytes32 hex
+  game_id_str: string;   // ESPN numeric string
+  sport: string;
+  game_info?: string;
+  stake_amount: number;
+  blockchain_tx_hash?: string;
+}): Promise<void> {
+  const res = await fetch(`${MIDDLEWARE_URL}/api/v1/predictions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error("Failed to register prediction:", (err as { detail?: string }).detail);
+  }
+}
+
 export interface BatchScoreResult {
   total_processed: number;
   total_errors: number;
