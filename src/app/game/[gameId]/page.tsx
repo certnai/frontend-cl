@@ -8,7 +8,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { parseEther, parseEventLogs } from "viem";
+import { parseEther, parseEventLogs, keccak256, encodePacked } from "viem";
 import { ConnectButton } from "@/components/ConnectButton";
 import Link from "next/link";
 import {
@@ -20,10 +20,9 @@ import { getGameResolution, getFinishedGame, getLiveGame, scoreGamePredictions, 
 import type { GameData, ResolutionData, LiveGameData, BatchScoreResult } from "@/lib/api";
 
 /* ───────── helper: ESPN game id → bytes32 ───────── */
+// Must match SportsPredictionResolver: keccak256(abi.encodePacked(gameId))
 function gameIdToBytes32(gameId: string): `0x${string}` {
-  // pad the numeric string as hex right-padded to 32 bytes
-  const hex = BigInt(gameId).toString(16);
-  return `0x${hex.padStart(64, "0")}` as `0x${string}`;
+  return keccak256(encodePacked(["string"], [gameId]));
 }
 
 /* ───────── helper: clean status label ───────── */

@@ -59,10 +59,8 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
     });
   }
 
-  // Derive ESPN game ID from bytes32
-  const espnGameId = pred?.gameId
-    ? parseInt(pred.gameId.replace(/^0x0*/, ""), 16).toString()
-    : null;
+  // Derive ESPN game ID from gameInfo (gameId bytes32 is now keccak256, not reversible)
+  const espnGameId = pred?.gameInfo ? pred.gameInfo.match(/\d+/)?.[0] ?? null : null;
 
   return (
     <div className="card p-5 space-y-3">
