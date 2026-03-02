@@ -37,11 +37,11 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
         predictionText: string;
         sport: string;
         gameInfo: string;
-        score: bigint;
-        resolved: boolean;
+        accuracyScore: bigint;
+        isScored: boolean;
         stakeAmount: bigint;
         gameId: `0x${string}`;
-        redeemed: boolean;
+        isRedeemed: boolean;
       }
     | undefined;
 
@@ -75,11 +75,11 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {pred?.redeemed ? (
+          {pred?.isRedeemed ? (
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
               Redeemed
             </span>
-          ) : pred?.resolved ? (
+          ) : pred?.isScored ? (
             <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
               Scored
             </span>
@@ -113,18 +113,18 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
       </div>
 
       {/* Score Display */}
-      {pred?.resolved && (
+      {pred?.isScored && (
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <div className="h-2 rounded-full bg-white/10 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
                 style={{
-                  width: `${Number(pred.score)}%`,
+                  width: `${Number(pred.accuracyScore)}%`,
                   backgroundColor:
-                    Number(pred.score) >= 70
+                    Number(pred.accuracyScore) >= 70
                       ? "#22c55e"
-                      : Number(pred.score) >= 40
+                      : Number(pred.accuracyScore) >= 40
                         ? "#eab308"
                         : "#ef4444",
                 }}
@@ -135,20 +135,20 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
             className="text-lg font-bold"
             style={{
               color:
-                Number(pred.score) >= 70
+                Number(pred.accuracyScore) >= 70
                   ? "#22c55e"
-                  : Number(pred.score) >= 40
+                  : Number(pred.accuracyScore) >= 40
                     ? "#eab308"
                     : "#ef4444",
             }}
           >
-            {pred.score.toString()}/100
+            {pred.accuracyScore.toString()}/100
           </span>
         </div>
       )}
 
       {/* Redeem Button */}
-      {pred?.resolved && !pred?.redeemed && (
+      {pred?.isScored && !pred?.isRedeemed && (
         <div className="pt-2 border-t border-white/10">
           {canRedeem ? (
             <div className="flex items-center justify-between">
