@@ -1,15 +1,15 @@
 // Contract addresses on Sepolia
 export const CONTRACTS = {
-  predictionNFT: "0x6B81606083C7ad420417aCf95134F7499f797d8F" as const,
-  stakingRegistry: "0xD1Fe116204B893eCF2a3521225f2E2FdA431907A" as const,
+  predictionNFT: "0xF316Cd17AEe297945dc366561b0524FDE1DAFdE9" as const,
+  stakingRegistry: "0x408467Ba752eA1298F21981130A3452a37B7403C" as const,
   sportsPredictionResolver:
-    "0xbc406560189c561fedf79609f103a21456f239EC" as const,
+    "0x301D2733Cb4Be5A832D8442A1a79608d8A751c93" as const,
   espnFinishedResolver:
-    "0x58ED026c9D0f1B08448884b380CfBcc945BccB7F" as const,
+    "0xB4A3dc809243b44BAa6099AAD6a729A330284b4F" as const,
   espnLiveResolver:
-    "0x6Cae278EdFaDF0c1259a4bD2C4B403243Dc905D9" as const,
-  rewardLogic: "0x33f53dD2E2a1dCCA1fA458F9CCaEBD211Ae12748" as const,
-  nftMarketplace: "0x493A19bbeF53d498A765413053080FEDAE594154" as const,
+    "0x1174B8A1A8dC2e29a2C1D286208444e68BF8F3eE" as const,
+  rewardLogic: "0xb01829C48EaE909D04Fd45894C2FA63CeF25B621" as const,
+  nftMarketplace: "0xA20dbF086dAF43DAf23C4d55a91126ab76c0e402" as const,
 } as const;
 
 // Individual address exports for convenience
