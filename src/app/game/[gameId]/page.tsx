@@ -153,11 +153,14 @@ function GameInfoCard({
 }
 
 /* ───────── prediction form ───────── */
-function PredictionForm({ gameId }: { gameId: string }) {
+function PredictionForm({ gameId, sport: defaultSport = "nba" }: { gameId: string; sport?: string }) {
   const { address, isConnected } = useAccount();
   const [prediction, setPrediction] = useState("");
-  const [sport, setSport] = useState("football");
+  const [sport, setSport] = useState(defaultSport);
   const [stakeEth, setStakeEth] = useState("0.001");
+
+  // Update sport if parent prop changes (game data loaded)
+  useEffect(() => { setSport(defaultSport); }, [defaultSport]);
 
   const { data: hash, writeContract, isPending } = useWriteContract();
 
@@ -251,10 +254,10 @@ function PredictionForm({ gameId }: { gameId: string }) {
             onChange={(e) => setSport(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           >
-            <option value="football">Football (NFL)</option>
-            <option value="basketball">Basketball (NBA)</option>
-            <option value="baseball">Baseball (MLB)</option>
-            <option value="hockey">Hockey (NHL)</option>
+            <option value="nba">Basketball (NBA)</option>
+            <option value="nfl">Football (NFL)</option>
+            <option value="mlb">Baseball (MLB)</option>
+            <option value="nhl">Hockey (NHL)</option>
             <option value="soccer">Soccer</option>
           </select>
         </div>
@@ -611,7 +614,7 @@ export default function GamePage() {
             live={live}
           />
           <div className="grid md:grid-cols-2 gap-6">
-            <PredictionForm gameId={gameId} />
+            <PredictionForm gameId={gameId} sport={finished?.sport || "nba"} />
             <ResolveTrigger gameId={gameId} />
           </div>
           <ScorePredictions

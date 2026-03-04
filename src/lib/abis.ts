@@ -82,6 +82,16 @@ export const predictionNFTAbi = [
   },
   {
     type: "function",
+    name: "approve",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "totalSupply",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
@@ -206,5 +216,128 @@ export const stakingRegistryAbi = [
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
+  },
+] as const;
+
+export const nftMarketplaceAbi = [
+  {
+    type: "function",
+    name: "listNFT",
+    inputs: [
+      { name: "nftContract", type: "address" },
+      { name: "tokenId", type: "uint256" },
+      { name: "price", type: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "buyNFT",
+    inputs: [{ name: "listingId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "cancelListing",
+    inputs: [{ name: "listingId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getActiveListings",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "tuple[]",
+        components: [
+          { name: "listingId", type: "uint256" },
+          { name: "nftContract", type: "address" },
+          { name: "tokenId", type: "uint256" },
+          { name: "seller", type: "address" },
+          { name: "price", type: "uint256" },
+          { name: "active", type: "bool" },
+          { name: "listedAt", type: "uint256" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isListed",
+    inputs: [
+      { name: "nftContract", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getListingByToken",
+    inputs: [
+      { name: "nftContract", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "listingId", type: "uint256" },
+          { name: "nftContract", type: "address" },
+          { name: "tokenId", type: "uint256" },
+          { name: "seller", type: "address" },
+          { name: "price", type: "uint256" },
+          { name: "active", type: "bool" },
+          { name: "listedAt", type: "uint256" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "marketplaceFee",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "NFTListed",
+    inputs: [
+      { name: "listingId", type: "uint256", indexed: true },
+      { name: "nftContract", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "seller", type: "address", indexed: false },
+      { name: "price", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "NFTSold",
+    inputs: [
+      { name: "listingId", type: "uint256", indexed: true },
+      { name: "nftContract", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "seller", type: "address", indexed: false },
+      { name: "buyer", type: "address", indexed: false },
+      { name: "price", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "ListingCancelled",
+    inputs: [
+      { name: "listingId", type: "uint256", indexed: true },
+      { name: "nftContract", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "seller", type: "address", indexed: false },
+    ],
   },
 ] as const;

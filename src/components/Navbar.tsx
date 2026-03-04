@@ -31,6 +31,12 @@ export function Navbar() {
           >
             My Predictions
           </Link>
+          <Link
+            href="/marketplace"
+            className="text-sm text-[var(--muted)] hover:text-white transition"
+          >
+            Marketplace
+          </Link>
           <ConnectButton />
         </div>
       </div>

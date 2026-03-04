@@ -1,18 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { ConnectButton } from "@/components/ConnectButton";
 import Link from "next/link";
 import {
   PREDICTION_NFT_ADDRESS,
-  STAKING_REGISTRY_ADDRESS,
+  NFT_MARKETPLACE_ADDRESS,
 } from "@/lib/contracts";
-import { predictionNFTAbi, stakingRegistryAbi } from "@/lib/abis";
+import { predictionNFTAbi, nftMarketplaceAbi } from "@/lib/abis";
 
 /* ───────── single prediction card ───────── */
 function PredictionCard({ tokenId }: { tokenId: bigint }) {
   const { address } = useAccount();
+  const [listPrice, setListPrice] = useState("");
+  const [listStep, setListStep] = useState<"idle" | "approving" | "listing" | "cancelling">("idle");
 
   const { data: predData } = useReadContract({
     address: PREDICTION_NFT_ADDRESS,
@@ -28,8 +31,36 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
     args: [tokenId],
   });
 
+  const { data: isListedData, refetch: refetchListed } = useReadContract({
+    address: NFT_MARKETPLACE_ADDRESS,
+    abi: nftMarketplaceAbi,
+    functionName: "isListed",
+    args: [PREDICTION_NFT_ADDRESS, tokenId],
+  });
+
+  const { data: listingData, refetch: refetchListing } = useReadContract({
+    address: NFT_MARKETPLACE_ADDRESS,
+    abi: nftMarketplaceAbi,
+    functionName: "getListingByToken",
+    args: [PREDICTION_NFT_ADDRESS, tokenId],
+    query: { enabled: !!isListedData },
+  });
+
   const { data: hash, writeContract, isPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+    onReplaced: () => {
+      refetchListed();
+      refetchListing();
+    },
+  });
+
+  // Refetch listing state after tx success
+  if (isSuccess && (listStep === "approving" || listStep === "listing" || listStep === "cancelling")) {
+    refetchListed();
+    refetchListing();
+    setListStep("idle");
+  }
 
   const pred = predData as
     | {
@@ -49,6 +80,8 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
   const canRedeem = redeem?.[0] ?? false;
   const redeemReason = redeem?.[1] ?? "";
   const rewardAmount = redeem?.[2] ?? BigInt(0);
+  const isListed = !!isListedData;
+  const listing = listingData as { listingId: bigint; price: bigint; seller: string } | undefined;
 
   function handleRedeem() {
     writeContract({
@@ -56,6 +89,38 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
       abi: predictionNFTAbi,
       functionName: "redeemNFT",
       args: [tokenId],
+    });
+  }
+
+  function handleApprove() {
+    setListStep("approving");
+    writeContract({
+      address: PREDICTION_NFT_ADDRESS,
+      abi: predictionNFTAbi,
+      functionName: "approve",
+      args: [NFT_MARKETPLACE_ADDRESS, tokenId],
+    });
+  }
+
+  function handleList() {
+    if (!listPrice) return;
+    setListStep("listing");
+    writeContract({
+      address: NFT_MARKETPLACE_ADDRESS,
+      abi: nftMarketplaceAbi,
+      functionName: "listNFT",
+      args: [PREDICTION_NFT_ADDRESS, tokenId, parseEther(listPrice)],
+    });
+  }
+
+  function handleCancel() {
+    if (!listing?.listingId) return;
+    setListStep("cancelling");
+    writeContract({
+      address: NFT_MARKETPLACE_ADDRESS,
+      abi: nftMarketplaceAbi,
+      functionName: "cancelListing",
+      args: [listing.listingId],
     });
   }
 
@@ -185,6 +250,66 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
                 View on Etherscan →
               </a>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Marketplace — List / Cancel */}
+      {pred && !pred.isRedeemed && (
+        <div className="pt-2 border-t border-white/10">
+          {isListed && listing ? (
+            /* Already listed — show price + cancel button */
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[var(--muted)]">
+                Listed:{" "}
+                <span className="text-yellow-400 font-medium">
+                  {formatEther(listing.price)} ETH
+                </span>
+              </span>
+              <button
+                onClick={handleCancel}
+                disabled={isPending || isConfirming}
+                className="text-sm px-4 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+              >
+                {isPending || isConfirming ? "Cancelling..." : "Cancel Listing"}
+              </button>
+            </div>
+          ) : (
+            /* Not listed — offer list-for-sale UI */
+            !canRedeem && (
+              <div className="space-y-2">
+                <p className="text-xs text-[var(--muted)]">Sell on marketplace</p>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0.001"
+                    placeholder="Price in ETH"
+                    value={listPrice}
+                    onChange={(e) => setListPrice(e.target.value)}
+                    className="flex-1 text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white placeholder:text-[var(--muted)] focus:outline-none focus:border-indigo-500"
+                  />
+                  {listStep === "idle" && (
+                    <button
+                      onClick={handleApprove}
+                      disabled={!listPrice || isPending || isConfirming}
+                      className="text-sm px-4 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 disabled:opacity-40 transition-colors"
+                    >
+                      Approve
+                    </button>
+                  )}
+                  {listStep === "approving" && (
+                    <button
+                      onClick={handleList}
+                      disabled={!listPrice || isPending || isConfirming}
+                      className="text-sm px-4 py-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 disabled:opacity-40 transition-colors"
+                    >
+                      {isPending || isConfirming ? "Confirming..." : "List NFT"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
           )}
         </div>
       )}
