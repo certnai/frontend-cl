@@ -276,7 +276,7 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
             </div>
           ) : (
             /* Not listed — offer list-for-sale UI */
-            !canRedeem && (
+            (
               <div className="space-y-2">
                 <p className="text-xs text-[var(--muted)]">Sell on marketplace</p>
                 <div className="flex gap-2">
