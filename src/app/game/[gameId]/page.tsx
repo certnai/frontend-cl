@@ -244,36 +244,18 @@ function PredictionForm({ gameId, sport: defaultSport = "nba" }: { gameId: strin
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-xs text-[var(--muted)] mb-1 block">
-            Sport
-          </label>
-          <select
-            value={sport}
-            onChange={(e) => setSport(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          >
-            <option value="nba">Basketball (NBA)</option>
-            <option value="nfl">Football (NFL)</option>
-            <option value="mlb">Baseball (MLB)</option>
-            <option value="nhl">Hockey (NHL)</option>
-            <option value="soccer">Soccer</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-[var(--muted)] mb-1 block">
-            Stake (ETH)
-          </label>
-          <input
-            type="number"
-            step="0.001"
-            min="0.001"
-            value={stakeEth}
-            onChange={(e) => setStakeEth(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          />
-        </div>
+      <div>
+        <label className="text-xs text-[var(--muted)] mb-1 block">
+          Stake (ETH)
+        </label>
+        <input
+          type="number"
+          step="0.001"
+          min="0.001"
+          value={stakeEth}
+          onChange={(e) => setStakeEth(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+        />
       </div>
 
       <button
