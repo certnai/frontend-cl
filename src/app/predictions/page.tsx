@@ -15,7 +15,7 @@ import { predictionNFTAbi, nftMarketplaceAbi } from "@/lib/abis";
 function PredictionCard({ tokenId }: { tokenId: bigint }) {
   const { address } = useAccount();
   const [listPrice, setListPrice] = useState("");
-  const [listStep, setListStep] = useState<"idle" | "approving" | "listing" | "cancelling">("idle");
+  const [listStep, setListStep] = useState<"idle" | "approving" | "approved" | "listing" | "cancelling">("idle");
 
   const { data: predData } = useReadContract({
     address: PREDICTION_NFT_ADDRESS,
@@ -56,7 +56,10 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
   });
 
   // Refetch listing state after tx success
-  if (isSuccess && (listStep === "approving" || listStep === "listing" || listStep === "cancelling")) {
+  if (isSuccess && listStep === "approving") {
+    setListStep("approved");
+  }
+  if (isSuccess && (listStep === "listing" || listStep === "cancelling")) {
     refetchListed();
     refetchListing();
     setListStep("idle");
@@ -300,11 +303,19 @@ function PredictionCard({ tokenId }: { tokenId: bigint }) {
                   )}
                   {listStep === "approving" && (
                     <button
+                      disabled
+                      className="text-sm px-4 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 opacity-40 transition-colors"
+                    >
+                      {isPending || isConfirming ? "Approving..." : "Approve"}
+                    </button>
+                  )}
+                  {(listStep === "approved" || listStep === "listing") && (
+                    <button
                       onClick={handleList}
                       disabled={!listPrice || isPending || isConfirming}
                       className="text-sm px-4 py-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 disabled:opacity-40 transition-colors"
                     >
-                      {isPending || isConfirming ? "Confirming..." : "List NFT"}
+                      {isPending || isConfirming ? "Listing..." : "List NFT"}
                     </button>
                   )}
                 </div>
