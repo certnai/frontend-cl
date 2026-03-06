@@ -1,6 +1,10 @@
-## Deployed on Vercel - visit https://frontend-cl.vercel.app/
+## For docs refer to - 
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+https://github.com/certnai/doc
+
+## Deployed on Vercel - 
+
+**Visit** - https://frontend-cl.vercel.app/
 
 ## Getting Started
 
